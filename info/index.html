@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔兽世界公益团今日开团信息一览</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/marked@15.0.6/marked.min.js"></script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            }
+      </style>
+    <script>
+        var _hmt = _hmt || [];
+        (function () {
+            var hm = document.createElement("script");
+            hm.src = "https://hm.baidu.com/hm.js?3ac2940a41ee1ec3ae7546f479ef6a35";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();
+    </script>
+</head>
+
+<body class="bg-yellow-900 font-sans">
+    <div id="app" class="max-w-7xl mx-auto py-8">
+        <!-- 标题栏 -->
+        <header
+            class="text-center bg-gradient-to-r from-yellow-300 to-yellow-500 text-gray-800 m-4 py-4 rounded-lg shadow-lg">
+            <h1 class="text-3xl font-bold mx-2 flex items-center justify-center">
+                魔兽世界公益团今日开团信息一览
+                <span class="inline-block text-2xl rounded-lg shadow-lg bg-yellow-900 text-yellow-100 px-2 py-0.5 ml-3">
+                    {{ todayStr }}
+                </span>
+            </h1>
+        </header>
+
+        <!-- Banner -->
+        <div class="bg-yellow-50 text-gray-900 m-4 py-4 px-6 rounded shadow-md">
+            <p class="text-sm md:text-base font-medium mb-4 text-justify">
+                开团信息为从网易DD每CD发布的信息人工采集整理得到的。如遇到开团团长因故不能按时开团等无法预见的情况而导致的信息不准确，敬请谅解。
+            </p>
+            <p class="text-sm md:text-base font-medium text-justify">
+                如果您可以访问 Wowhead 数据库，您将可以看到本页面上的成就以及其奖励的图标，鼠标悬停在名称上方将可以看到 Wowhead 数据库提供的相关说明。您也可以点击它们以跳转到 Wowhead
+                数据库来查看详情与其他信息（例如奖励坐骑的模型预览）。
+            </p>
+        </div>
+
+        <!-- Banner -->
+        <!-- <div class="bg-yellow-50 text-yellow-900 m-4 py-4 px-6 rounded shadow-md">
+            <p class="text-sm md:text-base font-bold text-justify mb-2">
+                团长留言：
+            </p>
+            <p class="text-sm md:text-base font-medium text-justify">
+                下cd晚上说有事就有事，所以只能随缘开团，临时通知诸位小伙伴。但请相信，每次我鸽你都是我情非得已，不得不鸽，这次的鸽你，是为了下次更好的相聚！笔芯。
+            </p>
+            <p class="text-sm md:text-base font-medium text-right">
+                —— <span class="font-bold">帅牛</span>（公益成就团）
+            </p>
+        </div> -->
+
+
+        <!-- 分区列表 -->
+        <div class="flex flex-col justify-center lg:flex-row gap-2">
+            <!-- 成就团分区 -->
+            <div class="text-yellow-200 p-4 flex-1 mx-2 lg:max-w-3xl"
+                v-if="categorizedSchedules['achievement'].length > 0">
+                <div class="flex justify-between items-center mb-4 text-shadow pointer-events-auto lg:pointer-events-none"
+                    @click="toggleCategory('achievement')">
+                    <h2 class="text-2xl font-bold text-yellow-200 flex-none">成就团（{{
+                        categorizedSchedules['achievement'].length }}）</h2>
+                    <div class="flex items-center w-full border-t-2 border-yellow-200 mx-4"></div>
+                    <span class="text-yellow-200 lg:hidden">
+                        <svg v-if="isCollapsed.achievement" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                        </svg>
+                    </span>
+                </div>
+                <!-- 活动卡片列表 -->
+                <transition-group name="card" tag="div" v-show="!isCollapsed.achievement"
+                    class="mx-0 sm:mx-4 lg:mx-8 my-8 space-y-6">
+                    <div v-for="schedule in categorizedSchedules['achievement']" :key="getCardKey(schedule)"
+                        class="p-6 rounded-lg shadow-md transition-transform transform"
+                        :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? 'bg-gray-300' : 'bg-yellow-100 hover:scale-105 hover:bg-yellow-100/95'">
+                        <!-- 活动标题 -->
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-700 flex items-center"
+                            :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? 'text-gray-500' : 'text-yellow-700'">
+                            {{ schedule.schedule_name }}
+                            <span v-if="isCanceled(schedule)"
+                                class="inline-block rounded-lg shadow-lg text-lg bg-gray-600 text-gray-100 px-2 py-0.5 ml-3">
+                                因故取消
+                            </span>
+                            <span v-else-if="isPast(schedule)"
+                                class="inline-block rounded-lg shadow-lg text-lg bg-gray-600 text-gray-100 px-2 py-0.5 ml-3">
+                                已过期
+                            </span>
+                        </h2>
+                        <!-- 信息列表 -->
+                        <ul class="text-gray-700 space-y-2">
+                            <li v-if="getAchievement(schedule)">
+                                <span class="font-bold">预期完成成就：</span>
+                                <ul class="list-[square] pl-5 marker:text-yellow-900 marker:font-bold">
+                                    <li v-for="achievement in getAchievement(schedule)" class="my-2 leading-relaxed">
+                                        <a :href="'https://www.wowhead.com/cn/achievement=' + achievement.id"
+                                            :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? '' : 'text-yellow-700'"
+                                            target="_blank">
+                                            {{ achievement.name }}
+                                        </a>
+                                        <span v-if="achievement.rewards.length > 0">
+                                            （奖励：<template v-for="(reward, index) in achievement.rewards">
+                                                <a :href="'https://www.wowhead.com/cn/item=' + reward.id"
+                                                    :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? '' : 'text-yellow-700'"
+                                                    target="_blank">
+                                                    {{ reward.name }}
+                                                </a>
+                                                <template v-if="index < achievement.rewards.length - 1">、</template>）
+                                            </template>
+                                        </span>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <span class="font-bold">开团时间：</span>{{ schedule.datetime }}
+                            </li>
+                            <li>
+                                <span class="font-bold">要求：</span>
+                                <span v-html="renderedMarkdown(schedule.requirement)"></span>
+                            </li>
+                            <li>
+                                <span class="font-bold">进团方式：</span>
+                                <a :href="schedule.entry.href" target="_blank" rel="noopener" class="underline"
+                                    :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? 'text-gray-500' : 'text-yellow-700'">{{
+                                    schedule.entry.text }}</a>
+                            </li>
+                        </ul>
+                        <!-- 标记按钮 -->
+                        <!-- <div class="relative flex justify-end mt-4 md:mt-0">
+                            <button v-if="!isAchieved(schedule)" @click="markAsAchieved(schedule)"
+                                class="md:absolute md:bottom-0 md:right-0 bg-yellow-500 hover:bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full shadow-md">
+                                标记为已完成成就
+                            </button>
+                            <button v-else @click="unmarkAsAchieved(schedule)"
+                                class="md:absolute md:bottom-0 md:right-0 bg-gray-400 hover:bg-gray-200 text-gray-900 px-4 py-2 rounded-full shadow-md">
+                                标记为未完成成就
+                            </button>
+                        </div> -->
+                    </div>
+                </transition-group>
+            </div>
+
+            <!-- 非成就团分区 -->
+            <div class="text-yellow-100 p-4 flex-1 mx-2 lg:max-w-3xl"
+                v-if="categorizedSchedules['nonAchievement'].length > 0">
+                <div class="flex justify-between items-center mb-4 text-shadow pointer-events-auto lg:pointer-events-none"
+                    @click="toggleCategory('nonAchievement')">
+                    <h2 class="text-2xl font-bold text-yellow-500 flex-none">非成就团（{{
+                        categorizedSchedules['nonAchievement'].length }}）</h2>
+                    <div class="flex items-center w-full border-t-2 border-yellow-500 mx-4"></div>
+                    <span class="text-yellow-500 lg:hidden">
+                        <svg v-if="isCollapsed.nonAchievement" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                        </svg>
+                    </span>
+                </div>
+                <!-- 活动卡片列表 -->
+                <transition-group name="card" tag="div" v-show="!isCollapsed.nonAchievement"
+                    class="mx-0 sm:mx-4 lg:mx-8 my-8 space-y-6">
+                    <div v-for="schedule in categorizedSchedules['nonAchievement']" :key="getCardKey(schedule)"
+                        class="p-6 rounded-lg shadow-md transition-transform transform"
+                        :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? 'bg-gray-300' : 'bg-yellow-200 hover:scale-105 hover:bg-yellow-200/95'">
+                        <!-- 活动标题 -->
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-700 flex items-center"
+                            :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? 'text-gray-500' : 'text-yellow-700'">
+                            {{ schedule.schedule_name }}
+                            <span v-if="isCanceled(schedule)"
+                                class="inline-block rounded-lg shadow-lg text-lg bg-gray-600 text-gray-100 px-2 py-0.5 ml-3">
+                                因故取消
+                            </span>
+                            <span v-else-if="isPast(schedule)"
+                                class="inline-block rounded-lg shadow-lg text-lg bg-gray-600 text-gray-100 px-2 py-0.5 ml-3">
+                                已过期
+                            </span>
+                        </h2>
+                        <!-- 信息列表 -->
+                        <ul class="text-gray-700 space-y-2">
+                            <li>
+                                <span class="font-bold">开团目标：</span>
+                                <span v-for="(flag, index) in schedule.flag"
+                                    class="inline-block rounded-lg shadow-md bg-yellow-700 text-yellow-100 px-2 py-1 mr-1.5">
+                                    {{ flag }}
+                                </span>
+                            </li>
+                            <li>
+                                <span class="font-bold">开团时间：</span>{{ schedule.datetime }}
+                            </li>
+                            <li>
+                                <span class="font-bold">要求：</span>
+                                <span v-html="renderedMarkdown(schedule.requirement)"></span>
+                            </li>
+                            <li>
+                                <span class="font-bold">进团方式：</span>
+                                <a :href="schedule.entry.href" target="_blank" rel="noopener" class="underline"
+                                    :class="(isAchieved(schedule) || isPast(schedule) || isCanceled(schedule)) ? 'text-gray-500' : 'text-yellow-700'">{{
+                                    schedule.entry.text }}</a>
+                            </li>
+                        </ul>
+                    </div>
+                </transition-group>
+            </div>
+        </div>
+
+        <!-- 返回顶部按钮 -->
+        <button @click="scrollToTop"
+            class="fixed bottom-8 right-8 bg-yellow-500 hover:bg-yellow-300 text-yellow-900 px-4 py-2 rounded-full shadow-lg">
+            返回顶部
+        </button>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-yellow-900 text-yellow-200 pb-6 text-sm">
+        <div class="container mx-auto text-center space-y-2">
+            <p>&copy; 2025 wow.matrix2.cn（仅页面设计）</p>
+            <p>
+                <a href="https://beian.miit.gov.cn/" rel="noopener" target="_blank" class="hover:underline">
+                    闽ICP备17032511号-2
+                </a>
+            </p>
+            <p class="flex justify-center items-center space-x-2">
+                <img src="/common/image/gonganbeian.png" alt="备案图标" class="inline-block w-5 h-5">
+                <a href="https://beian.mps.gov.cn/#/query/webSearch?code=35012302000133" rel="noopener" target="_blank"
+                    class="hover:underline">
+                    闽公网安备35012302000133号
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <style>
+        /* 平移动画 */
+        .card-enter-active,
+        .card-leave-active {
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        /* 进入时的初始状态 */
+        .card-enter-from,
+        .card-leave-to {
+            opacity: 0;
+            transform: translateY(20px);
+            /* 平移效果 */
+        }
+
+        /* 离开时将元素从布局流中移除 */
+        .card-leave-active {
+            position: absolute;
+        }
+    </style>
+
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    achievementData: {},
+                    scheduleData: [],
+                    achievedRecords: JSON.parse(localStorage.getItem('achievedRecords') || '[]'),
+                    isCollapsed: {
+                        achievement: false,
+                        nonAchievement: false,
+                    }
+                };
+            },
+            created() {
+                // Fetch data from JSON files
+                Promise.all([
+                    axios.get('/info/achievements.json'),
+                    axios.get('/info/schedules.json')
+                ])
+                    .then(([achievementsResponse, schedulesResponse]) => {
+                        this.achievementData = achievementsResponse.data;
+                        this.scheduleData = schedulesResponse.data;
+                    })
+                    .catch(error => {
+                        console.error('获取数据失败：', error);
+                    });
+
+            },
+            computed: {
+                targetDate() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const dateStr = urlParams.get('date');
+                    return dateStr ? new Date(`${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}T00:00:00`) : new Date();
+                },
+                achievementMap() {
+                    return Object.fromEntries(
+                        Object.entries(this.achievementData).map(([key, value]) => [value.name, { ...value, id: key }])
+                    );
+                },
+                filteredSchedules() {
+                    return this.scheduleData
+                        .filter(schedule => {
+                            const scheduleDate = new Date(schedule.datetime);
+                            return scheduleDate.getFullYear() === this.targetDate.getFullYear() &&
+                                scheduleDate.getMonth() === this.targetDate.getMonth() &&
+                                scheduleDate.getDate() === this.targetDate.getDate();
+                        })
+                        .sort((a, b) => {
+                            const isAchievedA = this.isAchieved(a);
+                            const isAchievedB = this.isAchieved(b);
+                            // 如果一个成就是已完成，排到末尾
+                            if (isAchievedA && !isAchievedB) return 1;
+                            if (!isAchievedA && isAchievedB) return -1;
+                            // 如果两个成就的完成状态相同，按时间排序
+                            return new Date(a.datetime) - new Date(b.datetime);
+                        }).map(item => {
+                            if (item.target_achievement !== undefined) {  // 判断 target_achievement 是否存在
+                                if (!Array.isArray(item.target_achievement)) {  // 如果不是数组
+                                    item.target_achievement = [item.target_achievement];  // 包装为单元素数组
+                                }
+                            }
+                            return item;  // 返回修改后的对象
+                        });
+                },
+                categorizedSchedules() {
+                    const achievement = [];
+                    const nonAchievement = [];
+
+                    this.filteredSchedules.forEach(schedule => {
+                        if (schedule.category === undefined || schedule.category === 'achievement') {
+                            achievement.push(schedule);
+                        } else {
+                            nonAchievement.push(schedule);
+                        }
+                    });
+
+                    return { achievement, nonAchievement };
+                },
+                todayStr() {
+                    return `${this.targetDate.getMonth() + 1}月${this.targetDate.getDate()}日`;
+                },
+                // markedRenderer() {
+                //     const renderer = new marked.Renderer();
+                //     renderer.link = (token) => {
+                //         return `<a href="${token.href}" target="_blank" rel="noopener" class="text-yellow-700 underline">${token.text}</a>`;
+                //     };
+                //     return renderer;
+                // },
+            },
+            methods: {
+                renderedMarkdown(content) {
+                    // return marked.parseInline(content, { renderer: this.markedRenderer });
+                    return marked.parseInline(content);
+                },
+                toggleCategory(category) {
+                    this.isCollapsed[category] = !this.isCollapsed[category];
+                },
+                getAchievement(schedule) {
+                    if (schedule.target_achievement !== undefined) {
+                        const result = [];
+                        schedule.target_achievement.forEach(id => {
+                            const achievement = this.achievementMap[this.achievementData[id]?.name];
+                            if (achievement) {
+                                result.push(achievement);
+                            }
+                        });
+                        return result;
+                    } else if (this.achievementMap[schedule.schedule_name] !== undefined) {
+                        return [this.achievementMap[schedule.schedule_name]];
+                    }
+                    return undefined;
+                },
+                isAchieved(schedule) {
+                    // return this.achievedRecords.includes(this.getAchievement(schedule)?.name);
+                    return false;
+                },
+                isPast(schedule) {
+                    return new Date(schedule.datetime) < new Date();
+                },
+                isCanceled(schedule) {
+                    return schedule.canceled !== undefined && schedule.canceled;
+                },
+                markAsAchieved(schedule) {
+                    // const achievementName = this.getAchievement(schedule)?.name;
+                    // if (achievementName && !this.achievedRecords.includes(achievementName)) {
+                    //     this.achievedRecords.push(achievementName);
+                    //     localStorage.setItem('achievedRecords', JSON.stringify(this.achievedRecords));
+                    // }
+                },
+                unmarkAsAchieved(schedule) {
+                    // const achievementName = this.getAchievement(schedule)?.name;
+                    // if (achievementName) {
+                    //     this.achievedRecords = this.achievedRecords.filter(name => name !== achievementName);
+                    //     localStorage.setItem('achievedRecords', JSON.stringify(this.achievedRecords));
+                    // }
+                },
+                getCardKey(schedule) {
+                    return `${schedule.datetime}-${schedule.schedule_name}-${schedule.entry}-${this.isAchieved(schedule)}`;
+                },
+                scrollToTop() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                bigScreenShow() {
+                    if (window.innerWidth >= 1024) {
+                        this.isCollapsed.achievement = false;
+                        this.isCollapsed.nonAchievement = false;
+                    }
+                },
+                loadTooltipScript() {
+                    const scriptId = "wowhead-tooltip-script";
+                    // 检查脚本是否已经加载，避免重复加载
+                    if (!document.getElementById(scriptId)) {
+                        window.whTooltips = {
+                            colorLinks: true,
+                            iconizeLinks: true,
+                            renameLinks: true,
+                            iconSize: 'small',
+                        };
+                        const script = document.createElement("script");
+                        script.src = "https://wow.zamimg.com/js/tooltips.js";
+                        script.id = scriptId; // 给脚本添加 ID 方便管理
+                        script.async = true; // 异步加载
+                        document.body.appendChild(script);
+
+                        script.onload = () => {
+                            console.info("Tooltip script loaded successfully.");
+                        };
+                        script.onerror = () => {
+                            console.error("Failed to load tooltip script.");
+                        };
+                    } else {
+                        console.warn("Tooltip script is already loaded.");
+                    }
+                },
+            },
+            mounted() {
+                this.loadTooltipScript();
+                // 在组件挂载后判断屏幕大小
+                this.bigScreenShow();
+                // 监听窗口尺寸变化
+                window.addEventListener('resize', this.bigScreenShow);
+            },
+            beforeDestroy() {
+                // 组件销毁前移除事件监听器
+                window.removeEventListener('resize', this.bigScreenShow);
+            },
+        });
+
+        app.mount("#app");
+    </script>
+</body>
+
+</html>
